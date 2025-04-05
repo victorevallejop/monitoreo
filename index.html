@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Clases Zoom</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #1e1e1e;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #2c2c2c;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    .header {
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .timer {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      padding: 20px 0;
+    }
+    .card {
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease;
+      color: white;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 30%, transparent 100%);
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .card h3 {
+      margin-bottom: 10px;
+    }
+    .status-indicator {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .table-container {
+      margin-top: 20px;
+      padding: 10px;
+      background: #333;
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #444;
+      text-align: center;
+    }
+    th {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">📊 Dashboard de Clases en Zoom</div>
+    <div class="timer" id="contador">🔄 Actualización en: 180s</div>
+    <div class="dashboard" id="dashboard"></div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Clase</th>
+            <th>Programa</th>
+            <th>Hora Comprometida</th>
+            <th>Inicio Real</th>
+            <th>Agendados</th>
+            <th>Participantes</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const urlBackend = "https://script.google.com/macros/s/AKfycby8jsGKPWA7LV7MszHTw7ZxPvtxBkgCtzZ3ID85eHMtXsCmPkwAAIBO8H7rztKrLQJ5dQ/exec"; // Reemplaza con tu URL
+    let tiempoRestante = 180;
+
+    function calcularColor(participantes, agendados) {
+      if (agendados === 0) return "#dc3545";
+      let porcentaje = (participantes / agendados) * 100;
+      if (porcentaje >= 75) return "#28a745";
+      if (porcentaje >= 50) return "#ffc107";
+      return "#ff5733";
+    }
+
+    function renderDashboard(clases) {
+      const dashboard = document.getElementById("dashboard");
+      const tableBody = document.getElementById("table-body");
+      dashboard.innerHTML = "";
+      tableBody.innerHTML = "";
+
+      clases.forEach(clase => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.style.background = `linear-gradient(135deg, ${calcularColor(clase.participantes, clase.agendados)} 30%, transparent 100%)`;
+
+        card.innerHTML = `
+          <h3>${clase.nombre}</h3>
+          <p>📚 Programa: <strong>${clase.programa}</strong></p>
+          <p>⏳ Hora Comprometida: <strong>${clase.horaComprometida}</strong></p>
+          <p>✅ Inicio Real: <strong>${clase.inicio}</strong></p>
+          <p>🗓️ Agendados: <strong>${clase.agendados}</strong></p>
+          <p class="status-indicator">👥 ${clase.participantes} participantes</p>
+        `;
+        dashboard.appendChild(card);
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${clase.nombre}</td>
+          <td>${clase.programa}</td>
+          <td>${clase.horaComprometida}</td>
+          <td>${clase.inicio}</td>
+          <td>${clase.agendados}</td>
+          <td>${clase.participantes}</td>
+          <td style="color: ${calcularColor(clase.participantes, clase.agendados)}">${clase.estado}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function actualizarDashboard() {
+      fetch(urlBackend)
+        .then(response => response.json())
+        .then(data => {
+          renderDashboard(data);
+          tiempoRestante = 180;
+        })
+        .catch(err => console.error("Error al obtener datos:", err));
+    }
+
+    function iniciarTemporizador() {
+      setInterval(() => {
+        document.getElementById("contador").textContent = `🔄 Actualización en: ${tiempoRestante}s`;
+        tiempoRestante--;
+        if (tiempoRestante <= 0) actualizarDashboard();
+      }, 1000);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      actualizarDashboard();
+      iniciarTemporizador();
+    });
+  </script>
+</body>
+</html>
